@@ -154,7 +154,7 @@
     input.value = "";
 
     const response = await fetch(
-      "http://localhost:3000/chat",
+      "https://seven77-ai-backend.onrender.com/chat",
       {
 
         method: "POST",
