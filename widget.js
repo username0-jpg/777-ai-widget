@@ -1,5 +1,13 @@
 (function () {
 
+  const currentScript =
+    document.currentScript;
+
+  const businessId =
+    currentScript.getAttribute(
+      "data-business"
+    ) || "777luckydraws";
+
   // CREATE CHAT BUTTON
 
   const button = document.createElement("div");
@@ -164,8 +172,9 @@
         },
 
         body: JSON.stringify({
-          message: message
-        })
+  message: message,
+  businessId: businessId
+})
 
       }
     );

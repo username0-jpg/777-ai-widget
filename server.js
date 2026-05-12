@@ -4,9 +4,8 @@ const express = require("express");
 const cors = require("cors");
 const OpenAI = require("openai");
 const fs = require("fs");
-
 const app = express();
-
+const businesses = require("./businesses.json");
 app.use(cors());
 app.use(express.json());
 
