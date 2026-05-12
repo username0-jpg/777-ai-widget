@@ -106,7 +106,25 @@ Rules:
   }
 
 });
+app.get("/leads", (req, res) => {
 
+  try {
+
+    const leads =
+      fs.readFileSync(
+        "leads.txt",
+        "utf8"
+      );
+
+    res.send(leads);
+
+  } catch {
+
+    res.send("No leads yet.");
+
+  }
+
+});
 app.listen(3000, () => {
 
   console.log("Server running on port 3000");
