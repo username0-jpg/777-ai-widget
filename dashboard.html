@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+  <title>AI Dashboard</title>
+
+  <style>
+
+    body {
+
+      font-family: Arial;
+      background: #111827;
+      color: white;
+
+      padding: 40px;
+    }
+
+    h1 {
+
+      margin-bottom: 30px;
+    }
+
+    .card {
+
+      background: #1f2937;
+
+      padding: 20px;
+
+      border-radius: 15px;
+
+      margin-bottom: 20px;
+    }
+
+    input,
+    textarea,
+    select {
+
+      width: 100%;
+
+      padding: 12px;
+
+      margin-top: 10px;
+
+      border: none;
+
+      border-radius: 10px;
+
+      background: #374151;
+
+      color: white;
+    }
+
+    button {
+
+      margin-top: 15px;
+
+      padding: 12px 20px;
+
+      background: #dc2626;
+
+      border: none;
+
+      border-radius: 10px;
+
+      color: white;
+
+      cursor: pointer;
+    }
+
+    .lead {
+
+      background: #374151;
+
+      padding: 15px;
+
+      border-radius: 10px;
+
+      margin-top: 15px;
+    }
+
+    .color-preview {
+
+      width: 100%;
+      height: 50px;
+
+      border-radius: 10px;
+
+      margin-top: 15px;
+    }
+
+  </style>
+
+</head>
+
+<body>
+
+  <h1>777 AI Dashboard</h1>
+
+  <div class="card">
+
+    <h2>Business Name</h2>
+
+    <input id="businessName" />
+
+  </div>
+
+  <div class="card">
+
+    <h2>AI Prompt</h2>
+
+    <textarea
+      id="prompt"
+      rows="10"
+    ></textarea>
+
+  </div>
+
+  <div class="card">
+
+    <h2>Widget Color</h2>
+
+    <select id="primaryColor">
+
+      <option value="#dc2626">
+        Red
+      </option>
+
+      <option value="#2563eb">
+        Blue
+      </option>
+
+      <option value="#16a34a">
+        Green
+      </option>
+
+      <option value="#9333ea">
+        Purple
+      </option>
+
+      <option value="#f59e0b">
+        Orange
+      </option>
+
+      <option value="#ec4899">
+        Pink
+      </option>
+
+      <option value="#06b6d4">
+        Cyan
+      </option>
+
+    </select>
+
+    <div
+      class="color-preview"
+      id="colorPreview"
+    ></div>
+
+    <button onclick="saveSettings()">
+      Save Settings
+    </button>
+
+  </div>
+
+  <div class="card">
+
+    <h2>Collected Leads</h2>
+
+    <div id="leads">
+      Loading leads...
+    </div>
+
+  </div>
+
+  <script>
+
+    const businessId =
+      "777luckydraws";
+
+    const userEmail =
+      "owner@777luckydraws.com";
+
+    // COLOR PREVIEW
+
+    document.getElementById(
+      "primaryColor"
+    ).addEventListener(
+      "change",
+      (event) => {
+
+        document.getElementById(
+          "colorPreview"
+        ).style.background =
+          event.target.value;
+
+      }
+    );
+
+    // LOAD SETTINGS
+
+    async function loadSettings() {
+
+      try {
+
+        const response =
+          await fetch(
+            `http://localhost:3000/settings?businessId=${businessId}`
+          );
+
+        const data =
+          await response.json();
+
+        document.getElementById(
+          "businessName"
+        ).value =
+          data.business_name;
+
+        document.getElementById(
+          "prompt"
+        ).value =
+          data.ai_prompt;
+
+        document.getElementById(
+          "primaryColor"
+        ).value =
+          data.primary_color;
+
+        document.getElementById(
+          "colorPreview"
+        ).style.background =
+          data.primary_color;
+
+      } catch (error) {
+
+        console.log(error);
+
+      }
+
+    }
+
+    // SAVE SETTINGS
+
+    async function saveSettings() {
+
+      const businessName =
+        document.getElementById(
+          "businessName"
+        ).value;
+
+      const aiPrompt =
+        document.getElementById(
+          "prompt"
+        ).value;
+
+      const primaryColor =
+        document.getElementById(
+          "primaryColor"
+        ).value;
+
+      try {
+
+        const response =
+          await fetch(
+            "http://localhost:3000/settings",
+            {
+              method: "POST",
+
+              headers: {
+                "Content-Type":
+                  "application/json"
+              },
+
+              body: JSON.stringify({
+
+                businessId,
+
+                businessName,
+
+                aiPrompt,
+
+                primaryColor
+
+              })
+
+            }
+          );
+
+        const data =
+          await response.json();
+
+        console.log(data);
+
+        alert(
+          "Settings saved!"
+        );
+
+      } catch (error) {
+
+        console.log(error);
+
+      }
+
+    }
+
+    // LOAD LEADS
+
+    async function loadLeads() {
+
+      try {
+
+        const response =
+          await fetch(
+            `http://localhost:3000/leads?userEmail=${userEmail}`
+          );
+
+        const data =
+          await response.json();
+
+        const leadsDiv =
+          document.getElementById(
+            "leads"
+          );
+
+        leadsDiv.innerHTML = "";
+
+        if (!data.length) {
+
+          leadsDiv.innerHTML =
+            "No leads yet.";
+
+          return;
+
+        }
+
+        data.forEach((lead) => {
+
+          leadsDiv.innerHTML += `
+
+            <div class="lead">
+
+              <strong>Email:</strong>
+              ${lead.email}
+
+              <br><br>
+
+              <strong>Message:</strong>
+              ${lead.message}
+
+              <br><br>
+
+              <strong>Business:</strong>
+              ${lead.business_id}
+
+            </div>
+
+          `;
+
+        });
+
+      } catch (error) {
+
+        console.log(error);
+
+      }
+
+    }
+
+    loadSettings();
+
+    loadLeads();
+
+  </script>
+
+</body>
+
+</html>

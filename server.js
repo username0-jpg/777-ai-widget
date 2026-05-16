@@ -3,96 +3,143 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const OpenAI = require("openai");
-const fs = require("fs");
+
+const { createClient } =
+  require("@supabase/supabase-js");
+
 const app = express();
-const businesses = require("./businesses.json");
-app.use(cors());
+
+app.use(cors({
+  origin: "*"
+}));
+
 app.use(express.json());
+
+// OPENAI
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+// SUPABASE
+
+const supabaseUrl =
+  "https://kmcrbguumketxanqmdja.supabase.co";
+
+const supabaseKey =
+  process.env.SUPABASE_KEY;
+
+const supabase =
+  createClient(
+    supabaseUrl,
+    supabaseKey
+  );
+
+// CHAT ROUTE
+
 app.post("/chat", async (req, res) => {
 
   try {
 
-    const userMessage = req.body.message;
+    const userMessage =
+      req.body.message;
 
-    // EMAIL DETECTION
-    const emailMatch = userMessage.match(
-      /[^\s@]+@[^\s@]+\.[^\s@]+/
-    );
+    const businessId =
+      req.body.businessId
+      || "777luckydraws";
 
-    if (emailMatch) {
+    const userEmail =
+      req.body.userEmail
+      || "owner@777luckydraws.com";
 
-      const lead = {
+    // LOAD SETTINGS
 
-        email: emailMatch[0],
+    const {
+      data: settings,
+      error: settingsError
+    } = await supabase
+      .from("business_settings")
+      .select("*")
+      .eq(
+        "business_id",
+        businessId
+      )
+      .single();
 
-        message: userMessage,
+    if (settingsError) {
 
-        date: new Date()
-
-      };
-
-      fs.appendFileSync(
-        "leads.txt",
-        JSON.stringify(lead) + "\n"
-      );
-
-      console.log("Lead saved:", lead);
+      throw settingsError;
 
     }
 
-    const completion = await openai.chat.completions.create({
+    // EMAIL DETECTION
 
-      model: "gpt-4o-mini",
+    const emailMatch =
+      userMessage.match(
+        /[^\s@]+@[^\s@]+\.[^\s@]+/
+      );
 
-      messages: [
+    // SAVE LEAD
 
-        {
-          role: "system",
+    if (emailMatch) {
 
-          content: `
-You are an AI assistant for 777LuckyDraws.
+      await supabase
+        .from("leads")
+        .insert([
+          {
+            email: emailMatch[0],
+            message: userMessage,
+            business_id: businessId,
+            user_email: userEmail
+          }
+        ]);
 
-Your job:
-- answer customer questions
-- help users understand competitions
-- encourage signups
-- be friendly and professional
-- keep responses short
+    }
+
+    // AI RESPONSE
+
+    const completion =
+      await openai.chat.completions.create({
+
+        model: "gpt-4o-mini",
+
+        messages: [
+
+          {
+            role: "system",
+
+            content: `
+
+${settings.ai_prompt}
 
 IMPORTANT:
-- try to collect the user's:
-  - name
-  - email
-  - phone number
-
-- if someone is interested, politely ask for their contact details
+- keep responses short
+- be friendly
+- collect customer details politely
+- encourage signups
 
 Rules:
 - never invent information
-- if unsure, ask customer to contact support
+- if unsure tell user to contact support
+
 `
-        },
+          },
 
-        {
-          role: "user",
-          content: userMessage
-        }
+          {
+            role: "user",
+            content: userMessage
+          }
 
-      ]
+        ]
 
-    });
-
-    console.log(completion);
+      });
 
     res.json({
+
       reply:
         completion.choices?.[0]?.message?.content
         || "No AI response"
+
     });
 
   } catch (error) {
@@ -106,27 +153,253 @@ Rules:
   }
 
 });
-app.get("/leads", (req, res) => {
+
+// GET LEADS
+
+app.get("/leads", async (req, res) => {
 
   try {
 
-    const leads =
-      fs.readFileSync(
-        "leads.txt",
-        "utf8"
+    const userEmail =
+      req.query.userEmail;
+
+    const {
+      data,
+      error
+    } = await supabase
+      .from("leads")
+      .select("*")
+      .eq(
+        "user_email",
+        userEmail
+      )
+      .order(
+        "created_at",
+        { ascending: false }
       );
 
-    res.send(leads);
+    if (error) {
 
-  } catch {
+      throw error;
 
-    res.send("No leads yet.");
+    }
+
+    res.json(data);
+
+  } catch (error) {
+
+    console.log(error);
+
+    res.status(500).send(
+      "Error loading leads"
+    );
 
   }
 
 });
+
+// GET SETTINGS
+
+app.get("/settings", async (req, res) => {
+
+  try {
+
+    const businessId =
+      req.query.businessId;
+
+    const {
+      data,
+      error
+    } = await supabase
+      .from("business_settings")
+      .select("*")
+      .eq(
+        "business_id",
+        businessId
+      )
+      .single();
+
+    if (error) {
+
+      throw error;
+
+    }
+
+    res.json(data);
+
+  } catch (error) {
+
+    console.log(error);
+
+    res.status(500).send(
+      "Error loading settings"
+    );
+
+  }
+
+});
+
+// SAVE SETTINGS
+
+app.post("/settings", async (req, res) => {
+
+  try {
+
+    const {
+      businessId,
+      businessName,
+      aiPrompt,
+      primaryColor
+    } = req.body;
+
+    const {
+      error
+    } = await supabase
+      .from("business_settings")
+      .update({
+
+        business_name:
+          businessName,
+
+        ai_prompt:
+          aiPrompt,
+
+        primary_color:
+          primaryColor
+
+      })
+      .eq(
+        "business_id",
+        businessId
+      );
+
+    if (error) {
+
+      throw error;
+
+    }
+
+    res.json({
+      success: true
+    });
+
+  } catch (error) {
+
+    console.log(error);
+
+    res.status(500).send(
+      "Error saving settings"
+    );
+
+  }
+
+});
+
+// CREATE BUSINESS
+
+app.post("/create-business", async (req, res) => {
+
+  try {
+
+    const {
+      businessId,
+      businessName,
+      userEmail,
+      aiPrompt,
+      primaryColor
+    } = req.body;
+
+    const {
+      error
+    } = await supabase
+      .from("business_settings")
+      .insert([
+        {
+          business_id:
+            businessId,
+
+          user_email:
+            userEmail,
+
+          business_name:
+            businessName,
+
+          ai_prompt:
+            aiPrompt,
+
+          primary_color:
+            primaryColor
+        }
+      ]);
+
+    if (error) {
+
+      throw error;
+
+    }
+
+    const widgetCode = `
+
+<script
+  src="http://localhost:5500/widget.js"
+  data-business="${businessId}"
+></script>
+
+`;
+
+    res.json({
+
+      success: true,
+
+      widgetCode
+
+    });
+
+  } catch (error) {
+
+    console.log(error);
+
+    res.status(500).json({
+      error:
+        "Error creating business"
+    });
+
+  }
+
+});
+
+// TEST SUPABASE
+
+app.get("/test-supabase", async (req, res) => {
+
+  const {
+    data,
+    error
+  } = await supabase
+    .from("leads")
+    .insert([
+      {
+        email: "test@gmail.com",
+        message: "test message",
+        business_id: "777luckydraws",
+        user_email:
+          "owner@777luckydraws.com"
+      }
+    ]);
+
+  res.json({
+    data,
+    error
+  });
+
+});
+
+// START SERVER
+
 app.listen(3000, () => {
 
-  console.log("Server running on port 3000");
+  console.log(
+    "Server running on port 3000"
+  );
 
 });

@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+  <title>Create AI Business</title>
+
+  <style>
+
+    body {
+
+      background: #111827;
+
+      color: white;
+
+      font-family: Arial;
+
+      padding: 40px;
+
+    }
+
+    h1 {
+
+      margin-bottom: 30px;
+
+    }
+
+    .box {
+
+      background: #1f2937;
+
+      padding: 30px;
+
+      border-radius: 20px;
+
+      max-width: 700px;
+
+    }
+
+    input,
+    textarea,
+    select {
+
+      width: 100%;
+
+      padding: 14px;
+
+      margin-top: 15px;
+
+      border: none;
+
+      border-radius: 10px;
+
+      background: #374151;
+
+      color: white;
+
+    }
+
+    textarea {
+
+      min-height: 140px;
+
+    }
+
+    button {
+
+      margin-top: 20px;
+
+      padding: 14px 20px;
+
+      background: #dc2626;
+
+      border: none;
+
+      border-radius: 10px;
+
+      color: white;
+
+      cursor: pointer;
+
+      font-weight: bold;
+
+    }
+
+    pre {
+
+      background: black;
+
+      padding: 20px;
+
+      border-radius: 10px;
+
+      overflow-x: auto;
+
+      margin-top: 30px;
+
+      color: #00ff88;
+
+    }
+
+    .preview {
+
+      margin-top: 20px;
+
+      padding: 20px;
+
+      border-radius: 15px;
+
+      color: white;
+
+      font-weight: bold;
+
+    }
+
+  </style>
+
+</head>
+
+<body>
+
+  <div class="box">
+
+    <h1>Create AI Business</h1>
+
+    <input
+      id="businessName"
+      placeholder="Business Name"
+    />
+
+    <input
+      id="businessId"
+      placeholder="business-id"
+    />
+
+    <input
+      id="userEmail"
+      placeholder="Owner Email"
+    />
+
+    <textarea
+      id="aiPrompt"
+      placeholder="Describe how your AI should behave..."
+    ></textarea>
+
+    <select id="primaryColor">
+
+      <option value="#dc2626">
+        Red
+      </option>
+
+      <option value="#2563eb">
+        Blue
+      </option>
+
+      <option value="#16a34a">
+        Green
+      </option>
+
+      <option value="#9333ea">
+        Purple
+      </option>
+
+      <option value="#f59e0b">
+        Orange
+      </option>
+
+      <option value="#ec4899">
+        Pink
+      </option>
+
+      <option value="#06b6d4">
+        Cyan
+      </option>
+
+    </select>
+
+    <div
+      class="preview"
+      id="preview"
+      style="background:#dc2626;"
+    >
+      Widget Color Preview
+    </div>
+
+    <button onclick="createBusiness()">
+      Create Business
+    </button>
+
+    <pre id="result">
+Your widget code will appear here...
+    </pre>
+
+  </div>
+
+  <script>
+
+    // COLOR PREVIEW
+
+    document.getElementById(
+      "primaryColor"
+    ).addEventListener(
+      "change",
+      (event) => {
+
+        document.getElementById(
+          "preview"
+        ).style.background =
+          event.target.value;
+
+      }
+    );
+
+    // CREATE BUSINESS
+
+    async function createBusiness() {
+
+      const businessName =
+        document.getElementById(
+          "businessName"
+        ).value;
+
+      const businessId =
+        document.getElementById(
+          "businessId"
+        ).value;
+
+      const userEmail =
+        document.getElementById(
+          "userEmail"
+        ).value;
+
+      const aiPrompt =
+        document.getElementById(
+          "aiPrompt"
+        ).value;
+
+      const primaryColor =
+        document.getElementById(
+          "primaryColor"
+        ).value;
+
+      try {
+
+        const response =
+          await fetch(
+            "http://localhost:3000/create-business",
+            {
+              method: "POST",
+
+              headers: {
+                "Content-Type":
+                  "application/json"
+              },
+
+              body: JSON.stringify({
+
+                businessName,
+                businessId,
+                userEmail,
+                aiPrompt,
+                primaryColor
+
+              })
+
+            }
+          );
+
+        const data =
+          await response.json();
+
+        document.getElementById(
+          "result"
+        ).textContent =
+          data.widgetCode;
+
+      } catch (error) {
+
+        console.log(error);
+
+      }
+
+    }
+
+  </script>
+
+</body>
+
+</html>
